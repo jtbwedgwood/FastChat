@@ -17,6 +17,8 @@ from fastchat.llm_judge.common import load_questions, temperature_config
 from fastchat.model import load_model, get_conversation_template
 from fastchat.utils import str_to_torch_dtype
 
+from fastchat.conversation import Conversation, SeparatorStyle
+
 
 def run_eval(
     model_path,
@@ -104,13 +106,23 @@ def get_model_answers(
         choices = []
         for i in range(num_choices):
             torch.manual_seed(i)
-            conv = get_conversation_template(model_id)
+            
+            # need to edit conversation format to fit bespoke format
+            conv = Conversation(
+                name="custom_template",
+                roles=("Human", "Assistant"),
+                sep="\n\n",
+                sep2="<eos>\n\n",
+                sep_style=SeparatorStyle.ADD_COLON_TWO,
+                messages=[]
+            )
             turns = []
             for j in range(len(question["turns"])):
                 qs = question["turns"][j]
                 conv.append_message(conv.roles[0], qs)
                 conv.append_message(conv.roles[1], None)
                 prompt = conv.get_prompt()
+                print(prompt)
                 input_ids = tokenizer([prompt]).input_ids
 
                 if temperature < 1e-4:
