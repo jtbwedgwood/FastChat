@@ -4,6 +4,7 @@ Usage:
 python3 gen_model_answer.py --model-path lmsys/fastchat-t5-3b-v1.0 --model-id fastchat-t5-3b-v1.0
 """
 import argparse
+import inspect
 import json
 import os
 import random
@@ -36,6 +37,7 @@ def run_eval(
     revision,
 ):
     questions = load_questions(question_file, question_begin, question_end)
+    print(len(questions))
     # random shuffle the questions to balance the loading
     random.shuffle(questions)
 
@@ -97,6 +99,16 @@ def get_model_answers(
         debug=False,
     )
 
+    # print("MODEL TYPE:", type(model))
+    # print("MODEL MRO:", model.__class__.__mro__)
+
+    # print("\nGENERATION CONFIG CLASS:", type(model.generation_config))
+    # print("GENERATION CONFIG:", model.generation_config)
+
+    # # Where does generate come from?
+    # print("generate defined in:", inspect.getmodule(model.generate))
+    # print("generate qualname:", model.generate.__qualname__)
+
     for question in tqdm(questions):
         if question["category"] in temperature_config:
             temperature = temperature_config[question["category"]]
@@ -122,7 +134,9 @@ def get_model_answers(
                 conv.append_message(conv.roles[0], qs)
                 conv.append_message(conv.roles[1], None)
                 prompt = conv.get_prompt()
+                print('"""')
                 print(prompt)
+                print('"""')
                 input_ids = tokenizer([prompt]).input_ids
 
                 if temperature < 1e-4:

@@ -92,8 +92,15 @@ def load_questions(question_file: str, begin: Optional[int], end: Optional[int])
         for line in ques_file:
             if line:
                 questions.append(json.loads(line))
-    questions = questions[begin:end]
-    return questions
+
+    # sort by index and rearrange questions for testing
+    questions = sorted(questions, key=lambda x: x["question_id"])
+    rearranged = []
+    for r in range(10):
+        for i in range(r, len(questions), 10):
+            rearranged.append(questions[i])
+    rearranged = rearranged[begin:end]
+    return rearranged
 
 
 def load_model_answers(answer_dir: str):

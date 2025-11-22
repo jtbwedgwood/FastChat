@@ -18,5 +18,5 @@ source /home/jwedgwoo/FastChat/.venv/bin/activate
 
 echo "Evaluating model answers ..."
 export OPENAI_API_KEY="$(cat /home/jwedgwoo/FastChat/openai_api_key.txt)"
-stdbuf -oL -eL python gen_judgment.py --model-list gemma-SFT-dsg-ablate gemma-SFT-method1 2>&1 | \
+stdbuf -oL -eL python gen_judgment.py --model-list gemma-SFT-method1-conditional gemma-SFT-method1-conditional-antirepetition 2>&1 | \
     tee -a "/home/jwedgwoo/FastChat/logs/mt-bench-$SLURM_JOB_ID.out"
