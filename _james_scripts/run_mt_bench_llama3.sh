@@ -20,5 +20,6 @@ echo "Evaluating model answers ..."
 export OPENAI_API_KEY="$(cat /home/jwedgwoo/FastChat/openai_api_key.txt)"
 stdbuf -oL -eL python gen_judgment.py \
     --judge-model llama-3.1 \
+    --judge-file data/judge_prompts_llama.jsonl \
     --model-list gemma-SFT-sae-finetuned-method1-bilayer-augment 2>&1 | \
     tee -a "/home/jwedgwoo/FastChat/logs/mt-bench-$SLURM_JOB_ID.out"
