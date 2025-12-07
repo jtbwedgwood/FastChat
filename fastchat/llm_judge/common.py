@@ -9,6 +9,8 @@ import json
 import os
 import re
 import time
+import transformers
+import torch
 from typing import Optional
 
 import openai
@@ -139,6 +141,23 @@ def load_judge_prompts(prompt_file: str):
     return prompts
 
 
+_PIPELINE = None
+def get_llama_pipeline():
+    """
+    Checks for preexisting _PIPELINE variable, otherwise initializes it.
+    """
+
+    global _PIPELINE
+    if _PIPELINE is None:
+        _PIPELINE = transformers.pipeline(
+            "text-generation",
+            model="meta-llama/Meta-Llama-3.1-8B-Instruct",
+            model_kwargs={"torch_dtype": torch.bfloat16},
+            device_map="auto",
+        )
+    return _PIPELINE
+
+
 def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     kwargs = {}
     model = judge.model_name
@@ -165,10 +184,12 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     rating = -1
 
     system_prompt = judge.prompt_template["system_prompt"]
-    conv = get_conversation_template(model)
-    conv.set_system_message(system_prompt)
-    conv.append_message(conv.roles[0], user_prompt)
-    conv.append_message(conv.roles[1], None)
+
+    if model in OPENAI_MODEL_LIST or model in ANTHROPIC_MODEL_LIST:
+        conv = get_conversation_template(model)
+        conv.set_system_message(system_prompt)
+        conv.append_message(conv.roles[0], user_prompt)
+        conv.append_message(conv.roles[1], None)
 
     if model in OPENAI_MODEL_LIST:
         judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
@@ -176,6 +197,14 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
         judgment = chat_completion_anthropic(
             model, conv, temperature=0, max_tokens=1024
         )
+    elif model == "llama-3.1":
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        pipeline = get_llama_pipeline()
+        outputs = pipeline(messages, do_sample=False, max_new_tokens=1024)
+        judgment = outputs[0]["generated_text"][-1]["content"]
     else:
         raise ValueError(f"Invalid judge model name: {model}")
 
@@ -708,7 +737,7 @@ def check_data(questions, model_answers, ref_answers, models, judges):
             if q["category"] not in NEED_REF_CATS:
                 continue
             assert (
-                q["question_id"] in ref_answers[jg.model_name]
+                q["question_id"] in ref_answers["gpt-4"]
             ), f"Missing reference answer to Question {q['question_id']} for judge {jg.model_name}"
 
 
