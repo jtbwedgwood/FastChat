@@ -203,7 +203,11 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
             {"role": "user", "content": user_prompt},
         ]
         pipeline = get_llama_pipeline()
-        outputs = pipeline(messages, do_sample=False, max_new_tokens=1024)
+        print('Pipeline object ID:', id(pipeline))
+        print('Pipeline device map:', pipeline.model.hf_device_map)
+        
+        # 8 tokens because no explanation
+        outputs = pipeline(messages, do_sample=False, max_new_tokens=8) 
         judgment = outputs[0]["generated_text"][-1]["content"]
     else:
         raise ValueError(f"Invalid judge model name: {model}")
